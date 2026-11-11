@@ -1,7 +1,10 @@
 # Ignorar Documentacao inteira
 /.claude/Documentacao/*
 
-# Manter estas duas pastas e todo o seu conteúdo
+# Manter a pasta principal
+!/.claude/Documentacao/.gitkeep
+
+# Manter estas duas pastas e todo o conteúdo
 !/.claude/Documentacao/postman/
 !/.claude/Documentacao/postman/**
 
