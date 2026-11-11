@@ -1,8 +1,15 @@
-# Documentação geral
-/.claude/Documentacao/
+# Ignorar Documentacao inteira
+/.claude/Documentacao/*
 
-# Documentação de testes
+# Manter estas duas pastas e todo o seu conteúdo
+!/.claude/Documentacao/collections_postman/
+!/.claude/Documentacao/collections_postman/**
+
+!/.claude/Documentacao/cenarios_testes/
+!/.claude/Documentacao/cenarios_testes/**
+
+# Ignorar documentação de testes
 /.claude/docs/test_cases/
 
-# Collections Postman
+# Ignorar collections Postman
 /.claude/docs/postman/
