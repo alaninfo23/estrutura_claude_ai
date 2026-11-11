@@ -1,8 +1,8 @@
 # Documentação geral
-/Documentacao/
+/.claude/Documentacao/
 
 # Documentação de testes
-/docs/test_cases/
+/.claude/docs/test_cases/
 
 # Collections Postman
-/docs/postman/
+/.claude/docs/postman/
