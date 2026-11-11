@@ -2,11 +2,11 @@
 /.claude/Documentacao/*
 
 # Manter estas duas pastas e todo o seu conteúdo
-!/.claude/Documentacao/collections_postman/
-!/.claude/Documentacao/collections_postman/**
+!/.claude/Documentacao/postman/
+!/.claude/Documentacao/postman/**
 
-!/.claude/Documentacao/cenarios_testes/
-!/.claude/Documentacao/cenarios_testes/**
+!/.claude/Documentacao/test_cases/
+!/.claude/Documentacao/test_cases/**
 
 # Ignorar documentação de testes
 /.claude/docs/test_cases/
