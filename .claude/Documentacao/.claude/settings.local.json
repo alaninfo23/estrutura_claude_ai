@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /home/josealan -name \"*vt-roteirizacao*001*\" -o -name \"*documentacao-tecnica*\" 2>/dev/null | head -10)",
+      "Bash(pdftotext \"/home/josealan/Claude/.claude/Documentacao/documentacao-tecnica-api-vt-roteirizacao_001 1.pdf\" -)",
+      "Bash(markitdown \"/home/josealan/Downloads/[API Bradesco] VT-Roteirização Solicitação e Acompanhamento de Roteirização de Colaboradores---test \\(1\\).xlsx\")",
+      "Bash(python3 -c ' *)",
+      "mcp__azure-devops__wit_work_item",
+      "Bash(cat >> *)",
+      "Bash(python3)"
+    ]
+  }
+}

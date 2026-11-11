@@ -1,0 +1,2400 @@
+{
+  "info": {
+    "name": "VT-Roteirização — Solicitação e Acompanhamento",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "companyId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "companyIdA",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "companyIdB",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "batchId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "routeId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "beneficiaryId_eligible",
+      "value": "88051342",
+      "type": "string"
+    },
+    {
+      "key": "beneficiaryId_no_home",
+      "value": "88051283",
+      "type": "string"
+    },
+    {
+      "key": "beneficiaryId_no_work",
+      "value": "88051284",
+      "type": "string"
+    },
+    {
+      "key": "beneficiaryId_open_process",
+      "value": "88051285",
+      "type": "string"
+    },
+    {
+      "key": "beneficiaryId_open_process_2",
+      "value": "88051287",
+      "type": "string"
+    },
+    {
+      "key": "beneficiaryId_invalid_cep",
+      "value": "88051290",
+      "type": "string"
+    },
+    {
+      "key": "beneficiaryId_inactive",
+      "value": "88051291",
+      "type": "string"
+    },
+    {
+      "key": "beneficiaryId_not_in_company",
+      "value": "99999",
+      "type": "string"
+    },
+    {
+      "key": "cpf_valid",
+      "value": "09304730783",
+      "type": "string"
+    },
+    {
+      "key": "cpf_invalid",
+      "value": "123.456.789-00",
+      "type": "string"
+    },
+    {
+      "key": "x_logged_user_id",
+      "value": "54321",
+      "type": "string"
+    },
+    {
+      "key": "batchId_processing",
+      "value": "142",
+      "type": "string"
+    },
+    {
+      "key": "batchId_error",
+      "value": "144",
+      "type": "string"
+    },
+    {
+      "key": "batchId_partial",
+      "value": "145",
+      "type": "string"
+    },
+    {
+      "key": "batchId_not_in_company",
+      "value": "146",
+      "type": "string"
+    },
+    {
+      "key": "batchId_open_process",
+      "value": "147",
+      "type": "string"
+    },
+    {
+      "key": "batchId_inactive",
+      "value": "148",
+      "type": "string"
+    },
+    {
+      "key": "batchId_invalid_cep",
+      "value": "149",
+      "type": "string"
+    },
+    {
+      "key": "batchId_no_home",
+      "value": "151",
+      "type": "string"
+    },
+    {
+      "key": "batchId_no_work",
+      "value": "152",
+      "type": "string"
+    },
+    {
+      "key": "routeId_awaiting",
+      "value": "5500",
+      "type": "string"
+    },
+    {
+      "key": "routeId_processing",
+      "value": "5502",
+      "type": "string"
+    },
+    {
+      "key": "routeId_error",
+      "value": "5503",
+      "type": "string"
+    },
+    {
+      "key": "routeId_technical_error",
+      "value": "5504",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Listar colaboradores com diferentes situações de elegibilidade",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Response contém array content\", function () {\n    const json = pm.response.json();\n    pm.expect(json).to.have.property(\"content\");\n    pm.expect(json.content).to.be.an(\"array\");\n});\npm.test(\"Campos de paginação presentes\", function () {\n    const json = pm.response.json();\n    pm.expect(json).to.have.property(\"totalElements\");\n    pm.expect(json).to.have.property(\"totalPages\");\n    pm.expect(json).to.have.property(\"totalEligible\");\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "02 - Colaborador sem endereço residencial e sem endereço de trabalho — motivo retornado é o residencial",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaborador inelegível com MISSING_HOME_ADDRESS\", function () {\n    const json = pm.response.json();\n    const item = json.content.find(c => c.ineligibilityReason === \"MISSING_HOME_ADDRESS\");\n    pm.expect(item).to.not.be.undefined;\n    pm.expect(item.eligible).to.be.false;\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "03 - Colaborador com endereço residencial preenchido mas sem endereço de trabalho",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaborador inelegível com MISSING_WORK_ADDRESS\", function () {\n    const json = pm.response.json();\n    const item = json.content.find(c => c.ineligibilityReason === \"MISSING_WORK_ADDRESS\");\n    pm.expect(item).to.not.be.undefined;\n    pm.expect(item.eligible).to.be.false;\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "04 - Filtro por elegibilidade — apenas elegíveis",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Todos os colaboradores são elegíveis\", function () {\n    const json = pm.response.json();\n    json.content.forEach(c => pm.expect(c.eligible).to.be.true);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries?eligible=true",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ],
+          "query": [
+            {
+              "key": "eligible",
+              "value": "true"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "05 - Filtro por elegibilidade — apenas inelegíveis",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Nenhum colaborador elegível na lista\", function () {\n    const json = pm.response.json();\n    json.content.forEach(c => {\n        pm.expect(c.eligible).to.be.false;\n        pm.expect(c.ineligibilityReason).to.not.be.null;\n    });\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries?eligible=false",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ],
+          "query": [
+            {
+              "key": "eligible",
+              "value": "false"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "06 - Filtro por CPF — busca exata",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Exatamente 1 colaborador retornado\", function () {\n    const json = pm.response.json();\n    pm.expect(json.content).to.have.lengthOf(1);\n    pm.expect(json.content[0].beneficiaryDocumentNumber).to.eql(pm.variables.get(\"cpf_valid\"));\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries?beneficiaryDocumentNumber={{cpf_valid}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ],
+          "query": [
+            {
+              "key": "beneficiaryDocumentNumber",
+              "value": "{{cpf_valid}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "07 - Filtro por CPF com formato inválido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 400\", function () {\n    pm.response.to.have.status(400);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries?beneficiaryDocumentNumber={{cpf_invalid}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ],
+          "query": [
+            {
+              "key": "beneficiaryDocumentNumber",
+              "value": "{{cpf_invalid}}"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "08 - Filtro por nome — busca parcial case-insensitive",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Todos os resultados contêm 'jos' no nome\", function () {\n    const json = pm.response.json();\n    json.content.forEach(c => pm.expect(c.fullName.toLowerCase()).to.include(\"jos\"));\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries?name=jos",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ],
+          "query": [
+            {
+              "key": "name",
+              "value": "jos"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "09 - Filtro por lastRouteStatus = TECHNICAL_ERROR não disponível como filtro",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 400\", function () {\n    pm.response.to.have.status(400);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries?lastRouteStatus=TECHNICAL_ERROR",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ],
+          "query": [
+            {
+              "key": "lastRouteStatus",
+              "value": "TECHNICAL_ERROR"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "10 - Ordenação padrão por name,asc",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaboradores ordenados por nome ASC\", function () {\n    const json = pm.response.json();\n    const names = json.content.map(c => c.fullName);\n    const sorted = [...names].sort();\n    pm.expect(names).to.eql(sorted);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "11 - Ordenação por lastRouteDate,asc com valores nulos",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries?sort=lastRouteDate,asc",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ],
+          "query": [
+            {
+              "key": "sort",
+              "value": "lastRouteDate,asc"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "12 - Paginação na listagem de colaboradores — primeira página",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Primeira página com 20 itens\", function () {\n    const json = pm.response.json();\n    pm.expect(json.content.length).to.be.at.most(20);\n    pm.expect(json).to.have.property(\"totalElements\");\n    pm.expect(json).to.have.property(\"totalPages\");\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries?page=0&size=20",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "20"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "13 - Paginação na listagem de colaboradores — última página",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries?page=2&size=20",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "2"
+            },
+            {
+              "key": "size",
+              "value": "20"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "14 - Paginação na listagem de colaboradores — size fora do limite máximo",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 400\", function () {\n    pm.response.to.have.status(400);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries?size=101",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ],
+          "query": [
+            {
+              "key": "size",
+              "value": "101"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "15 - Empresa sem colaboradores ativos",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Content vazio e totalElements = 0\", function () {\n    const json = pm.response.json();\n    pm.expect(json.content).to.be.an(\"array\").that.is.empty;\n    pm.expect(json.totalElements).to.eql(0);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "16 - Colaborador com status de erro (E ou ET) deve ser elegível para re-roteirização",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaboradores com ERROR/TECHNICAL_ERROR são elegíveis\", function () {\n    const json = pm.response.json();\n    const errors = json.content.filter(c => c.lastRouteStatus === \"ERROR\" || c.lastRouteStatus === \"TECHNICAL_ERROR\");\n    errors.forEach(c => pm.expect(c.eligible).to.be.true);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "17 - Solicitação de roteirização com colaboradores elegíveis",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 202\", function () {\n    pm.response.to.have.status(202);\n});\npm.test(\"Response contém batchId\", function () {\n    const json = pm.response.json();\n    pm.expect(json).to.have.property(\"batchId\");\n    pm.expect(json.batchId).to.be.a(\"number\");\n    pm.variables.set(\"batchId\", json.batchId);\n});\npm.test(\"beneficiaryCount = 3\", function () {\n    const json = pm.response.json();\n    pm.expect(json.beneficiaryCount).to.eql(3);\n});\npm.test(\"Header Location presente\", function () {\n    pm.expect(pm.response.headers.get(\"Location\")).to.include(\"routing-requests\");\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Logged-User-Id",
+            "value": "{{x_logged_user_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"beneficiaryIds\": [\n    88051342,\n    88051343,\n    88051344\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "18 - Solicitação com array vazio de beneficiaryIds",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 400\", function () {\n    pm.response.to.have.status(400);\n});\npm.test(\"Código de erro ROT-019 presente\", function () {\n    const text = pm.response.text();\n    pm.expect(text).to.include(\"ROT-019\");\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Logged-User-Id",
+            "value": "{{x_logged_user_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"beneficiaryIds\": []\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "19 - Solicitação com body malformado (JSON inválido)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 400\", function () {\n    pm.response.to.have.status(400);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Logged-User-Id",
+            "value": "{{x_logged_user_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{ \"beneficiaryIds\": [88051342",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "20 - Solicitação sem o campo obrigatório beneficiaryIds",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 400\", function () {\n    pm.response.to.have.status(400);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Logged-User-Id",
+            "value": "{{x_logged_user_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "21 - Registro do operador via X-Logged-User-Id",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 202\", function () {\n    pm.response.to.have.status(202);\n});\npm.test(\"batchId retornado — verificar ID_USUCRI_RTR no banco\", function () {\n    const json = pm.response.json();\n    pm.expect(json).to.have.property(\"batchId\");\n    pm.variables.set(\"batchId\", json.batchId);\n    console.log(\"Verificar no banco: ID_USUCRI_RTR = 54321 para batchId \" + json.batchId);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Logged-User-Id",
+            "value": "{{x_logged_user_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"beneficiaryIds\": [\n    88051342\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "22 - Comportamento quando X-Logged-User-Id está ausente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 400\", function () {\n    pm.response.to.have.status(400);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"beneficiaryIds\": [\n    88051342\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "23 - Solicitação com colaborador não pertencente à empresa",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 202\", function () {\n    pm.response.to.have.status(202);\n});\npm.test(\"batchId retornado\", function () {\n    const json = pm.response.json();\n    pm.expect(json).to.have.property(\"batchId\");\n    pm.variables.set(\"batchId_not_in_company\", json.batchId);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Logged-User-Id",
+            "value": "{{x_logged_user_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"beneficiaryIds\": [\n    88051342,\n    99999\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "24 - Solicitação com colaborador sem endereço residencial",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 202\", function () {\n    pm.response.to.have.status(202);\n});\npm.test(\"batchId retornado\", function () {\n    const json = pm.response.json();\n    pm.expect(json).to.have.property(\"batchId\");\n    pm.variables.set(\"batchId_no_home\", json.batchId);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Logged-User-Id",
+            "value": "{{x_logged_user_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"beneficiaryIds\": [\n    88051283\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "25 - Solicitação com colaborador sem endereço de trabalho",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 202\", function () {\n    pm.response.to.have.status(202);\n});\npm.test(\"batchId retornado\", function () {\n    const json = pm.response.json();\n    pm.expect(json).to.have.property(\"batchId\");\n    pm.variables.set(\"batchId_no_work\", json.batchId);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Logged-User-Id",
+            "value": "{{x_logged_user_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"beneficiaryIds\": [\n    88051284\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "26 - Solicitação com colaborador que possui processo aberto",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 202\", function () {\n    pm.response.to.have.status(202);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Logged-User-Id",
+            "value": "{{x_logged_user_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"beneficiaryIds\": [\n    88051285\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "27 - Solicitação com colaborador inativo na empresa",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 202\", function () {\n    pm.response.to.have.status(202);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Logged-User-Id",
+            "value": "{{x_logged_user_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"beneficiaryIds\": [\n    88051291\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "28 - Solicitação com lote em que todos os colaboradores possuem processo aberto",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 202\", function () {\n    pm.response.to.have.status(202);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          },
+          {
+            "key": "X-Logged-User-Id",
+            "value": "{{x_logged_user_id}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"beneficiaryIds\": [\n    88051285,\n    88051287\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "29 - Consultar lote onde colaborador não pertence à empresa",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaborador 99999 com status ERROR e ROT-004\", function () {\n    const json = pm.response.json();\n    const item = json.content.find(c => c.beneficiaryId == 99999);\n    pm.expect(item).to.not.be.undefined;\n    pm.expect(item.status).to.eql(\"ERROR\");\n    pm.expect(JSON.stringify(item.error)).to.include(\"ROT-004\");\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/{{batchId_not_in_company}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "{{batchId_not_in_company}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "30 - Consultar lote onde colaborador não possui endereço residencial",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaborador com status ERROR e ROT-001\", function () {\n    const json = pm.response.json();\n    const item = json.content.find(c => c.beneficiaryId == 88051283);\n    pm.expect(item.status).to.eql(\"ERROR\");\n    pm.expect(JSON.stringify(item.error)).to.include(\"ROT-001\");\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/{{batchId_no_home}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "{{batchId_no_home}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "31 - Consultar lote onde colaborador não possui endereço de trabalho",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaborador com status ERROR e ROT-002\", function () {\n    const json = pm.response.json();\n    const item = json.content.find(c => c.beneficiaryId == 88051284);\n    pm.expect(item.status).to.eql(\"ERROR\");\n    pm.expect(JSON.stringify(item.error)).to.include(\"ROT-002\");\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/{{batchId_no_work}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "{{batchId_no_work}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "32 - Consultar lote onde colaborador possui processo aberto",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaborador com status ERROR e ROT-032\", function () {\n    const json = pm.response.json();\n    const item = json.content.find(c => c.beneficiaryId == 88051285);\n    pm.expect(item.status).to.eql(\"ERROR\");\n    pm.expect(JSON.stringify(item.error)).to.include(\"ROT-032\");\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/{{batchId_open_process}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "{{batchId_open_process}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "33 - Consultar lote onde colaborador está inativo",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaborador inativo com status ERROR\", function () {\n    const json = pm.response.json();\n    const item = json.content.find(c => c.beneficiaryId == 88051291);\n    pm.expect(item.status).to.eql(\"ERROR\");\n    pm.expect(item.error).to.be.an(\"array\").that.is.not.empty;\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/{{batchId_inactive}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "{{batchId_inactive}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "34 - Consultar status de lote em processamento",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Status do lote é PROCESSING\", function () {\n    const json = pm.response.json();\n    pm.expect(json.status).to.eql(\"PROCESSING\");\n    pm.expect(json.completedAt).to.be.null;\n});\npm.test(\"Itens têm PROCESSING ou AWAITING_APPROVAL\", function () {\n    const json = pm.response.json();\n    json.content.forEach(c => {\n        pm.expect([\"PROCESSING\", \"AWAITING_APPROVAL\"]).to.include(c.status);\n    });\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/{{batchId_processing}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "{{batchId_processing}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "35 - Consultar status de lote com falha geral",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Status do lote é ERROR\", function () {\n    const json = pm.response.json();\n    pm.expect(json.status).to.eql(\"ERROR\");\n    pm.expect(json.completedAt).to.be.null;\n});\npm.test(\"Todos os itens com ERROR ou TECHNICAL_ERROR e error como lista\", function () {\n    const json = pm.response.json();\n    json.content.forEach(c => {\n        pm.expect([\"ERROR\", \"TECHNICAL_ERROR\"]).to.include(c.status);\n        pm.expect(c.error).to.be.an(\"array\").that.is.not.empty;\n    });\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/{{batchId_error}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "{{batchId_error}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "36 - Paginação no status do lote — navegação entre páginas",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Paginação page=0 size=20\", function () {\n    const json = pm.response.json();\n    pm.expect(json.content.length).to.be.at.most(20);\n    pm.expect(json).to.have.property(\"totalElements\");\n    pm.expect(json).to.have.property(\"totalPages\");\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/{{batchId_processing}}?page=0&size=20",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "{{batchId_processing}}"
+          ],
+          "query": [
+            {
+              "key": "page",
+              "value": "0"
+            },
+            {
+              "key": "size",
+              "value": "20"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "37 - Paginação no status do lote — size fora do limite máximo",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 400\", function () {\n    pm.response.to.have.status(400);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/{{batchId_processing}}?size=101",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "{{batchId_processing}}"
+          ],
+          "query": [
+            {
+              "key": "size",
+              "value": "101"
+            }
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "38 - batchId inexistente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 404\", function () {\n    pm.response.to.have.status(404);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/9999",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "9999"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "39 - Consultar lote de empresa diferente da informada no path",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 403\", function () {\n    pm.response.to.have.status(403);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyIdB}}/routing-requests/{{batchId_processing}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyIdB}}",
+            "routing-requests",
+            "{{batchId_processing}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "40 - Consultar lote com erro parcial — um colaborador falha e outro continua processando",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Lote PROCESSING com itens mistos ERROR e PROCESSING/AWAITING_APPROVAL\", function () {\n    const json = pm.response.json();\n    pm.expect(json.status).to.eql(\"PROCESSING\");\n    const hasError = json.content.some(c => c.status === \"ERROR\");\n    pm.expect(hasError).to.be.true;\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/{{batchId_partial}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "{{batchId_partial}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "41 - Consultar rota ainda em processamento",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Status PROCESSING, arrays null\", function () {\n    const json = pm.response.json();\n    pm.expect(json.status).to.eql(\"PROCESSING\");\n    pm.expect(json.outboundRouteLegs).to.be.null;\n    pm.expect(json.returnRouteLegs).to.be.null;\n    pm.expect(json.suggestedBenefits).to.be.null;\n    pm.expect(json.completedAt).to.be.null;\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routes/{{routeId_processing}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routes",
+            "{{routeId_processing}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "42 - Consultar rota com status ERROR",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Status ERROR, arrays null, error preenchido\", function () {\n    const json = pm.response.json();\n    pm.expect(json.status).to.eql(\"ERROR\");\n    pm.expect(json.outboundRouteLegs).to.be.null;\n    pm.expect(json.returnRouteLegs).to.be.null;\n    pm.expect(json.suggestedBenefits).to.be.null;\n    pm.expect(json.completedAt).to.be.null;\n    pm.expect(json.error).to.not.be.null;\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routes/{{routeId_error}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routes",
+            "{{routeId_error}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "43 - Consultar rota com status TECHNICAL_ERROR",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Status TECHNICAL_ERROR, arrays null, error preenchido\", function () {\n    const json = pm.response.json();\n    pm.expect(json.status).to.eql(\"TECHNICAL_ERROR\");\n    pm.expect(json.outboundRouteLegs).to.be.null;\n    pm.expect(json.returnRouteLegs).to.be.null;\n    pm.expect(json.suggestedBenefits).to.be.null;\n    pm.expect(json.completedAt).to.be.null;\n    pm.expect(json.error).to.not.be.null;\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routes/{{routeId_technical_error}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routes",
+            "{{routeId_technical_error}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "44 - Endereços no detalhe da rota são dados atuais do colaborador",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"homeAddress contém endereço atual (AV. BRASIL, 100)\", function () {\n    const json = pm.response.json();\n    pm.expect(json.homeAddress).to.include(\"AV. BRASIL\");\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routes/{{routeId_awaiting}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routes",
+            "{{routeId_awaiting}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "45 - Consultar rota com routeId inexistente",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 404\", function () {\n    pm.response.to.have.status(404);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routes/9999",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routes",
+            "9999"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "46 - Consultar rota pertencente a empresa diferente da informada no path",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 403\", function () {\n    pm.response.to.have.status(403);\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyIdB}}/routes/{{routeId_awaiting}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyIdB}}",
+            "routes",
+            "{{routeId_awaiting}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "47 - Consultar detalhe de rota com status AWAITING_APPROVAL",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Status AWAITING_APPROVAL com dados preenchidos\", function () {\n    const json = pm.response.json();\n    pm.expect(json.status).to.eql(\"AWAITING_APPROVAL\");\n    pm.expect(json.outboundRouteLegs).to.be.an(\"array\").that.is.not.empty;\n    pm.expect(json.returnRouteLegs).to.be.an(\"array\").that.is.not.empty;\n    pm.expect(json.suggestedBenefits).to.be.an(\"array\").that.is.not.empty;\n    pm.expect(json.totalOutboundTimeMinutes).to.be.a(\"number\");\n    pm.expect(json.totalReturnTimeMinutes).to.be.a(\"number\");\n    pm.expect(json.totalWalkingDistanceKm).to.be.a(\"number\");\n    pm.expect(json.completedAt).to.not.be.null;\n    pm.expect(json.error).to.be.null;\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routes/{{routeId_awaiting}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routes",
+            "{{routeId_awaiting}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "48 - Distância de caminhada exibida em metros com arredondamento",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"boardingWalkMeters arredondado corretamente\", function () {\n    const json = pm.response.json();\n    if (json.outboundRouteLegs && json.outboundRouteLegs.length > 0) {\n        json.outboundRouteLegs.forEach(leg => {\n            pm.expect(leg.boardingWalkMeters).to.be.a(\"number\");\n            pm.expect(Number.isInteger(leg.boardingWalkMeters)).to.be.true;\n        });\n    }\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routes/{{routeId_awaiting}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routes",
+            "{{routeId_awaiting}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "49 - Inelegibilidade atualizada após correção de dados",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaborador 88051283 agora elegível\", function () {\n    const json = pm.response.json();\n    const item = json.content.find(c => c.beneficiaryId == 88051283);\n    if (item) {\n        pm.expect(item.eligible).to.be.true;\n        pm.expect(item.ineligibilityReason).to.be.null;\n    }\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "50 - Status de elegibilidade atualizado após nova solicitação",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaborador 88051342 com ROUTE_IN_PROGRESS após POST\", function () {\n    const json = pm.response.json();\n    const item = json.content.find(c => c.beneficiaryId == 88051342);\n    if (item) {\n        pm.expect(item.eligible).to.be.false;\n        pm.expect(item.ineligibilityReason).to.eql(\"ROUTE_IN_PROGRESS\");\n    }\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "51 - Cancelamento automático de lote após 24h sem processamento",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Status do lote é CANCELLED\", function () {\n    const json = pm.response.json();\n    pm.expect(json.status).to.eql(\"CANCELLED\");\n    json.content.forEach(c => pm.expect(c.status).to.eql(\"CANCELLED\"));\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/routing-requests/{{batchId}}",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "routing-requests",
+            "{{batchId}}"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "52 - Colaborador com rota ativa não elegível para nova roteirização",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code esperado: 200\", function () {\n    pm.response.to.have.status(200);\n});\npm.test(\"Colaborador 88051342 com ROUTE_ACTIVE inelegível\", function () {\n    const json = pm.response.json();\n    const item = json.content.find(c => c.beneficiaryId == 88051342);\n    if (item) {\n        pm.expect(item.eligible).to.be.false;\n        pm.expect(item.ineligibilityReason).to.eql(\"ROUTE_ACTIVE\");\n    }\n});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}",
+            "type": "text"
+          }
+        ],
+        "body": {},
+        "url": {
+          "raw": "{{vt_roteirizacao}}/companies/{{companyId}}/beneficiaries",
+          "host": [
+            "{{vt_roteirizacao}}"
+          ],
+          "path": [
+            "companies",
+            "{{companyId}}",
+            "beneficiaries"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}

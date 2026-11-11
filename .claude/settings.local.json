@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__azure-devops__wit_work_item",
+      "Bash(python3 -c ' *)",
+      "Bash(pip3 install *)",
+      "Bash(pip install *)",
+      "Bash(mkdir -p /home/josealan/Claude/.claude/docs/test_cases)",
+      "Bash(mkdir -p /home/josealan/Claude/.claude/rules)",
+      "Write(/home/josealan/Claude/.claude/docs/worklog.md)"
+    ],
+    "additionalDirectories": [
+      "/home/josealan/Claude/.claude/docs/test_cases",
+      "/home/josealan/Claude/.claude/rules"
+    ]
+  }
+}

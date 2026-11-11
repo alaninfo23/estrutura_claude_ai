@@ -1,0 +1,1013 @@
+openapi: 3.0.3
+info:
+  title: API Vale Transporte - Roteirização (MVP)
+  description: |
+    API para o fluxo de roteirização de Vale Transporte.
+    
+    Consolida as funcionalidades essenciais dos microsserviços de roteirização
+    em um único domínio REST.
+    
+    ## Fluxo Principal (2 etapas)
+    
+    ```
+    1. SELEÇÃO        → GET /beneficiaries  (listar colaboradores para roteirização)
+    
+    2. PROCESSAMENTO  → POST /routing-requests  (dispara roteirização assíncrona)
+                     → GET /routing-requests/{routingRequestId}  (acompanha status)
+                     → GET /routes/{routeId}  (consulta resultado da rota)
+    ```
+    
+    ## Autenticação e Autorização
+    
+    A autenticação é gerenciada pelo API Gateway (Sensedia) via **clientId/clientSecret** (OAuth2 Client Credentials).
+    
+    **Fluxo de autorização:**
+    1. Consumer se autentica no Sensedia com `clientId` + `clientSecret`
+    2. Sensedia valida as credenciais e extrai a **raiz do CNPJ** vinculada ao `clientId`
+    3. Sensedia injeta a raiz do CNPJ no header `X-Company-Document-Root` e encaminha ao backend
+    4. Backend valida se o `companyId` no path pertence à raiz de CNPJ recebida no header
+    5. Se não pertencer → retorna 403 (Forbidden)
+    
+    **Headers injetados pelo Sensedia:**
+    - `X-Company-Document-Root` — Raiz do CNPJ (8 primeiros dígitos) vinculada ao clientId
+    - `X-Logged-User-Id` — ID do operador (quando aplicável)
+  version: 1.0.0
+  contact:
+    name: Equipe VT
+    email: vt@alelo.com.br
+
+servers:
+  - url: https://api.alelo.com.br/vt/v1
+    description: Produção
+  - url: https://api-hml.alelo.com.br/vt/v1
+    description: Homologação
+
+tags:
+  - name: Seleção
+    description: Consulta de usuários pendentes
+  - name: Solicitação
+    description: Disparo e acompanhamento do processamento de rotas
+  - name: Rotas
+    description: Consulta de rotas processadas
+
+paths:
+  # ===================== SELEÇÃO =====================
+  /companies/{companyId}/beneficiaries:
+    get:
+      tags: [Seleção]
+      summary: Listar usuários pendentes de roteirização
+      description: |
+        Retorna colaboradores ativos que precisam de roteirização.
+        
+        Diferente do legado (que só retornava quem tinha endereço válido), este endpoint
+        retorna **todos** os colaboradores ativos com o campo `eligible` indicando se estão
+        aptos para roteirização e `ineligibilityReason` explicando o motivo quando não estão.
+        
+        Use este endpoint para:
+        - Identificar quais colaboradores precisam de roteirização
+        - Ver quem precisa de correção de dados antes de roteirizar
+        - Selecionar colaboradores para o POST /solicitar
+        
+        ## Campo `eligible`
+        - `true` — colaborador apto para roteirização (endereço residencial + trabalho válidos, sem rota ativa)
+        - `false` — colaborador **não** apto (campo `ineligibilityReason` indica o motivo)
+        
+        ## Motivos de inelegibilidade (`ineligibilityReason`)
+        | Motivo | Descrição |
+        |--------|-----------|
+        | `MISSING_HOME_ADDRESS` | Endereço residencial não cadastrado |
+        | `MISSING_WORK_ADDRESS` | Endereço de trabalho não cadastrado |
+        | `ROUTE_IN_PROGRESS` | Já possui roteirização em processamento |
+        | `ROUTE_ACTIVE` | Já possui rota ativa (finalizada/aprovada) |
+        
+        ## Filtros disponíveis
+        - Busca por nome, CPF, departamento, endereço de trabalho
+        - Filtro por elegibilidade
+        - Filtro por status da última roteirização
+        - Paginação e ordenação
+      operationId: listarUsuariosPendentesRoteirizacao
+      parameters:
+        - $ref: '#/components/parameters/CompanyIdPath'
+        - name: beneficiaryDocumentNumber
+          in: query
+          required: false
+          description: Filtrar por CPF (busca exata, apenas números, 11 dígitos)
+          schema:
+            type: string
+            pattern: '^\d{11}$'
+            example: "09304730783"
+        - name: name
+          in: query
+          required: false
+          description: Filtrar por nome do colaborador (case-insensitive, busca parcial)
+          schema:
+            type: string
+            example: "JOSIMAR"
+        - name: department
+          in: query
+          required: false
+          description: Filtrar por departamento (case-insensitive, busca parcial)
+          schema:
+            type: string
+            example: "OPERAÇÕES"
+        - name: workAddressId
+          in: query
+          required: false
+          description: Filtrar por ID do endereço de trabalho (útil para empresas com múltiplas unidades)
+          schema:
+            type: integer
+            format: int64
+        - name: lastRouteStatus
+          in: query
+          required: false
+          description: |
+            Filtrar por status da última roteirização:
+            - `NEVER` — nunca roteirizado
+            - `ERROR` — última roteirização com erro
+            - `REJECTED` — última rota rejeitada
+          schema:
+            type: string
+            enum: [NEVER, ERROR, REJECTED]
+        - name: eligible
+          in: query
+          required: false
+          description: |
+            Filtrar por elegibilidade:
+            - `true` — apenas colaboradores aptos para roteirização
+            - `false` — apenas colaboradores que precisam de correção
+            Se não informado, retorna todos.
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          required: false
+          description: Número da página (inicia em 0)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: size
+          in: query
+          required: false
+          description: Quantidade de registros por página
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: sort
+          in: query
+          required: false
+          description: |
+            Campo de ordenação. Valores aceitos: `name`, `department`, `lastRouteDate`.
+            Sufixo `,asc` ou `,desc` para direção (default: `name,asc`).
+            
+            Sugestão: usar `lastRouteDate,asc` para priorizar quem nunca foi roteirizado.
+          schema:
+            type: string
+            default: "name,asc"
+            example: "lastRouteDate,asc"
+      responses:
+        '200':
+          description: Lista paginada de usuários pendentes de roteirização
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutingBeneficiaryPaginated'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  # ===================== SOLICITAÇÃO =====================
+  /companies/{companyId}/routing-requests:
+    post:
+      tags: [Solicitação]
+      summary: Solicitar roteirização para um ou mais usuários
+      description: |
+        Dispara o processamento **assíncrono** de roteirização para os colaboradores selecionados.
+        
+        Retorna 202 com `routingRequestId` para acompanhamento via `GET /routing-requests/{routingRequestId}`.
+        
+        ## Identificação do operador
+        O `X-Logged-User-Id` (operador que está solicitando) é passado no header pela 
+        plataforma Sensedia (API Gateway). Utilizado para auditoria e histórico.
+        Não precisa ser enviado no body — é injetado automaticamente pelo gateway.
+        
+        ## Pipeline interno
+        1. **INS** — Envia CPF + endereços para cálculo de rotas
+        2. **CON** — Consulta trajetos calculados (ida/volta)
+        3. **COM** — Consulta codificação de compra (produtos/tarifas)
+        4. **END** — Marca como "Aguardando aprovação"
+        5. **GER** — Gera documentos da rota
+        
+        ## Tempo estimado
+        ~30 segundos a 6 minutos por usuário, dependendo da complexidade da rota.
+        
+        ## Validações (retornam 422)
+        - Todos os IDs devem pertencer à empresa
+        - Todos devem ter endereço residencial e de trabalho válidos
+        - Nenhum pode ter rota em processamento
+        
+        ## Observações
+        - Lotes não processados em 24h são cancelados automaticamente
+      operationId: solicitarRoteirizacao
+      parameters:
+        - $ref: '#/components/parameters/CompanyIdPath'
+        - name: X-Logged-User-Id
+          in: header
+          required: true
+          description: |
+            ID do operador logado (usuário que está solicitando a roteirização).
+            Injetado automaticamente pelo API Gateway (Sensedia) a partir do token de autenticação.
+            Utilizado para auditoria e histórico.
+          schema:
+            type: integer
+            format: int64
+            example: 54321
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoutingRequest'
+      responses:
+        '202':
+          description: Solicitação aceita para processamento assíncrono
+          headers:
+            Location:
+              description: URL para acompanhar a solicitação via polling
+              schema:
+                type: string
+                example: "/vt/v1/companies/{companyId}/routing-requests/7890"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoutingAcceptedResponse'
+        '400':
+          description: Formato da requisição inválido (JSON malformado, campos obrigatórios ausentes)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: |
+            Validação de negócio falhou:
+            - CPFs não pertencem à empresa
+            - Usuários sem endereço válido
+            - Todos os usuários já possuem rota em processamento
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: |
+            Rate limit excedido. Muitas solicitações simultâneas.
+            Aguarde antes de tentar novamente.
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos para aguardar antes de nova tentativa
+              example: 60
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /companies/{companyId}/routing-requests/{routingRequestId}:
+    get:
+      tags: [Solicitação]
+      summary: Consultar status do lote de roteirização
+      description: |
+        Acompanha o progresso do processamento assíncrono.
+        
+        ## Status possíveis
+        | Status | Descrição |
+        |--------|-----------|
+        | `PROCESSING` | Rotas sendo calculadas |
+        | `COMPLETED` | Todas as rotas processadas com sucesso |
+        | `COMPLETED_WITH_ERRORS` | Todas processadas, mas há erros parciais |
+        | `ERROR` | Falha geral no processamento |
+      operationId: consultarLote
+      parameters:
+        - $ref: '#/components/parameters/CompanyIdPath'
+        - name: routingRequestId
+          in: path
+          required: true
+          description: ID da solicitação de roteirização retornado no POST /routing-requests
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Status do lote
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: |
+                Segundos sugeridos para próximo polling (presente apenas quando status=PROCESSANDO).
+                Valor baseado no número de usuários pendentes (10s × pendentes).
+              example: 30
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  # ===================== ROTAS =====================
+  /companies/{companyId}/routes/{routeId}:
+    get:
+      tags: [Rotas]
+      summary: Consultar detalhe da rota
+      description: |
+        Retorna o detalhe completo de uma roteirização processada:
+        percursos ida/volta, linhas de transporte, VT sugerido, economia calculada
+        e status de contestação.
+      operationId: consultarRota
+      parameters:
+        - $ref: '#/components/parameters/CompanyIdPath'
+        - name: routeId
+          in: path
+          required: true
+          description: ID da roteirização
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Detalhe da rota
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RouteDetailResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+        '401':
+          $ref: '#/components/responses/Unauthenticated'
+        '403':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+# ===================== COMPONENTS =====================
+components:
+  parameters:
+    CompanyIdPath:
+      name: companyId
+      in: path
+      required: true
+      description: Identificador único da empresa
+      schema:
+        type: integer
+        format: int64
+        example: 12345
+    CompanyDocumentRootHeader:
+      name: X-Company-Document-Root
+      in: header
+      required: true
+      description: |
+        Raiz do CNPJ (8 primeiros dígitos) vinculada ao clientId no Sensedia.
+        Injetado automaticamente pelo API Gateway — **não enviar manualmente**.
+        Backend usa este valor para validar se o `companyId` no path pertence ao grupo econômico.
+      schema:
+        type: string
+        pattern: '^\d{8}$'
+        example: "12345678"
+
+  schemas:
+    # --- Seleção ---
+    RoutingBeneficiaryPaginated:
+      type: object
+      description: |
+        Lista paginada de usuários pendentes de roteirização.
+        Inclui campo `totalEligible` para saber quantos colaboradores podem ser 
+        selecionados para roteirização sem percorrer todas as páginas.
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoutingBeneficiary'
+        page:
+          type: integer
+          description: Página atual (0-indexed)
+        size:
+          type: integer
+          description: Registros por página
+        totalElements:
+          type: integer
+          format: int64
+          description: Total de registros (considerando filtros aplicados)
+        totalPages:
+          type: integer
+          description: Total de páginas
+        totalEligible:
+          type: integer
+          format: int64
+          description: |
+            Total de colaboradores elegíveis para roteirização (independent dos filtros de paginação).
+            Útil para seleção em massa — indica quantos podem ser enviados no POST /solicitar.
+
+    RoutingBeneficiary:
+      type: object
+      description: Colaborador na listagem de roteirização (com indicador de elegibilidade).
+      properties:
+        beneficiaryId:
+          type: integer
+          format: int64
+          description: ID do beneficiário (usar no POST /solicitar)
+          example: 98765
+        companyId:
+          type: integer
+          format: int64
+          description: ID da empresa do colaborador
+          example: 12345
+        beneficiaryDocumentNumber:
+          type: string
+          description: CPF do beneficiário
+          example: "09304730783"
+        fullName:
+          type: string
+          description: Nome completo do colaborador
+          example: "JOSIMAR FREIRE FERREIRA"
+        registrationNumber:
+          type: string
+          description: Matrícula
+          example: "000000213"
+        department:
+          type: string
+          description: Departamento/setor
+          example: "OPERAÇÕES"
+        position:
+          type: string
+          description: Cargo
+          example: "MANIPULADOR DE ALIMENTOS"
+        homeAddress:
+          $ref: '#/components/schemas/HomeAddress'
+        workAddress:
+          $ref: '#/components/schemas/WorkAddress'
+        workAddressId:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID do endereço de trabalho (para filtro por unidade)
+          example: 1
+        eligible:
+          type: boolean
+          description: |
+            Se o colaborador está apto para roteirização.
+            - `true` — pode ser incluído no POST /solicitar
+            - `false` — precisa de correção (ver `ineligibilityReason`)
+          example: true
+        ineligibilityReason:
+          type: string
+          nullable: true
+          enum: [MISSING_HOME_ADDRESS, MISSING_WORK_ADDRESS, ROUTE_IN_PROGRESS, ROUTE_ACTIVE]
+          description: |
+            Motivo da inelegibilidade (null quando `eligible = true`):
+            - `MISSING_HOME_ADDRESS` — endereço residencial não cadastrado
+            - `MISSING_WORK_ADDRESS` — endereço de trabalho não cadastrado
+            - `ROUTE_IN_PROGRESS` — já possui roteirização em processamento
+            - `ROUTE_ACTIVE` — já possui rota ativa (finalizada/aprovada)
+        lastRouteStatus:
+          type: string
+          nullable: true
+          enum: [REJECTED, ERROR, TECHNICAL_ERROR, null]
+          description: Status da última roteirização (null se nunca roteirizado)
+        lastRouteDate:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data da última tentativa de roteirização (null se nunca roteirizado)
+
+    WorkAddress:
+      type: object
+      description: Endereço de trabalho (destino da rota).
+      properties:
+        street:
+          type: string
+          example: "RUA SIQUEIRA CAMPOS"
+        number:
+          type: string
+          example: "74"
+        complement:
+          type: string
+        neighborhood:
+          type: string
+          example: "COPACABANA"
+        city:
+          type: string
+          example: "RIO DE JANEIRO"
+        state:
+          type: string
+          minLength: 2
+          maxLength: 2
+          example: "RJ"
+        zipCode:
+          type: string
+          pattern: '^\d{8}$'
+          example: "22440033"
+        referencePoint:
+          type: string
+          maxLength: 100
+          description: Local de referência para facilitar a localização do endereço
+          example: "Próximo à estação de metrô Siqueira Campos"
+
+    HomeAddress:
+      type: object
+      description: Endereço residencial (origem da rota).
+      properties:
+        street:
+          type: string
+          example: "RUA ANA CASEMIRO"
+        number:
+          type: string
+          example: "27"
+        complement:
+          type: string
+          example: "CASA"
+        neighborhood:
+          type: string
+          example: "BENFICA"
+        city:
+          type: string
+          example: "RIO DE JANEIRO"
+        state:
+          type: string
+          minLength: 2
+          maxLength: 2
+          example: "RJ"
+        zipCode:
+          type: string
+          pattern: '^\d{8}$'
+          example: "20930190"
+        referencePoint:
+          type: string
+          maxLength: 100
+          description: Local de referência para facilitar a localização do endereço
+          example: "Em frente à padaria São Jorge"
+
+    # --- Solicitação ---
+    RoutingRequest:
+      type: object
+      required: [beneficiaryIds]
+      description: |
+        Lista de IDs de beneficiários para roteirizar.
+        
+        O `X-Logged-User-Id` (operador) é passado no header pela plataforma Sensedia.
+        Não precisa ser enviado no body.
+      properties:
+        beneficiaryIds:
+          type: array
+          minItems: 1
+          maxItems: 200
+          description: Lista de IDs dos beneficiários selecionados para roteirização (obtidos no GET /beneficiaries)
+          items:
+            type: integer
+            format: int64
+          example: [98765, 98766, 98767]
+
+    RoutingAcceptedResponse:
+      type: object
+      description: Resposta da solicitação aceita para processamento.
+      properties:
+        routingRequestId:
+          type: integer
+          format: int64
+          description: ID da solicitação para acompanhamento via GET /routing-requests/{routingRequestId}
+          example: 7890
+        beneficiaryCount:
+          type: integer
+          description: Quantidade de beneficiários aceitos para processamento
+          example: 3
+
+    BatchStatusResponse:
+      type: object
+      description: |
+        Status do lote de roteirização.
+        Baseado em: RoteirizacaoLoteDTO
+      properties:
+        routingRequestId:
+          type: integer
+          format: int64
+          example: 7890
+        status:
+          type: string
+          enum: [PROCESSING, COMPLETED, COMPLETED_WITH_ERRORS, ERROR]
+          description: |
+            Status do lote:
+            - PROCESSING — Há pelo menos 1 usuário pendente
+            - COMPLETED — Todos processados com sucesso
+            - COMPLETED_WITH_ERRORS — Todos processados, mas há erros parciais
+            - ERROR — Falha geral
+        totalCount:
+          type: integer
+          description: Total de colaboradores no lote
+          example: 3
+        processedCount:
+          type: integer
+          description: Quantidade já processada (sucesso + erro)
+          example: 2
+        errorCount:
+          type: integer
+          description: Quantidade com erro
+          example: 0
+        pendingCount:
+          type: integer
+          description: Quantidade ainda processando
+          example: 1
+        completionPercentage:
+          type: number
+          format: double
+          description: Percentual de conclusão
+          example: 66.7
+        requestedAt:
+          type: string
+          format: date-time
+          example: "2026-07-13T15:05:00-03:00"
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Data/hora de conclusão do lote (null se ainda processando)
+        elapsedTime:
+          type: string
+          description: Tempo decorrido desde a solicitação (formato legível)
+          example: "2 min 30s"
+        beneficiaries:
+          type: array
+          description: Detalhamento por beneficiário do lote
+          items:
+            type: object
+            properties:
+              beneficiaryId:
+                type: integer
+                format: int64
+                example: 98765
+              beneficiaryDocumentNumber:
+                type: string
+                example: "09304730783"
+              fullName:
+                type: string
+                example: "JOSIMAR FREIRE FERREIRA"
+              routeId:
+                type: integer
+                format: int64
+                description: ID da roteirização criada
+                example: 5500
+              status:
+                type: string
+                enum: [PROCESSING, COMPLETED, ERROR, TECHNICAL_ERROR]
+              currentStep:
+                type: string
+                enum: [INSERT_ROUTE, QUERY_ROUTE, QUERY_PURCHASE, FINALIZE, GENERATE_DOCUMENT, FINISHED, ERROR, TECHNICAL_ERROR]
+                description: |
+                  Etapa atual no pipeline:
+                  - INSERT_ROUTE — Passo 1 (INS)
+                  - QUERY_ROUTE — Passo 2 (CON)
+                  - QUERY_PURCHASE — Passo 3 (COM)
+                  - FINALIZE — Passo 4 (END)
+                  - GENERATE_DOCUMENT — Passo 5 (GER)
+                  - FINISHED — Pipeline completo
+              updatedAt:
+                type: string
+                format: date-time
+              attempts:
+                type: integer
+                description: Quantidade de tentativas de consulta (backoff em caso de "Processando")
+                example: 1
+              error:
+                type: string
+                nullable: true
+                description: Mensagem de erro genérica
+              errorDetail:
+                type: string
+                nullable: true
+                description: |
+                  Mensagem detalhada do erro.
+                  Ex: "Não Localizado", "Distancia menos de 1000 metros", "Funcionário não Encontrado"
+
+    # --- Rotas ---
+    RouteDetailResponse:
+      type: object
+      description: |
+        Detalhe completo da roteirização.
+        Baseado em: RoteirizacaoDetalheVO
+      properties:
+        routeId:
+          type: integer
+          format: int64
+          example: 5500
+        companyId:
+          type: integer
+          format: int64
+          example: 12345
+        routingRequestId:
+          type: integer
+          format: int64
+          description: ID da solicitação que originou esta rota
+          example: 7890
+        beneficiaryId:
+          type: integer
+          format: int64
+          example: 98765
+        beneficiaryDocumentNumber:
+          type: string
+          example: "09304730783"
+        fullName:
+          type: string
+          example: "JOSIMAR FREIRE FERREIRA"
+        status:
+          type: string
+          enum: [PROCESSING, COMPLETED, ERROR, TECHNICAL_ERROR]
+          description: |
+            Status da roteirização:
+            - PROCESSING — Em processamento
+            - COMPLETED — Rota calculada com sucesso
+            - ERROR — Erro no cálculo (dados inválidos, distância < 1km, etc.)
+            - TECHNICAL_ERROR — Erro técnico (exceção interna)
+        requestedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        workAddress:
+          $ref: '#/components/schemas/WorkAddress'
+        homeAddress:
+          $ref: '#/components/schemas/HomeAddress'
+        outboundRouteLegs:
+          type: array
+          description: Percursos do trajeto de ida (sentido residência → trabalho)
+          items:
+            $ref: '#/components/schemas/RouteLeg'
+        returnRouteLegs:
+          type: array
+          description: Percursos do trajeto de volta (sentido trabalho → residência)
+          items:
+            $ref: '#/components/schemas/RouteLeg'
+        totalOutboundTimeMinutes:
+          type: number
+          format: double
+          nullable: true
+          description: Soma dos tempos de viagem no trajeto de ida (minutos)
+          example: 62.5
+        totalReturnTimeMinutes:
+          type: number
+          format: double
+          nullable: true
+          description: Soma dos tempos de viagem no trajeto de volta (minutos)
+          example: 58.3
+        totalWalkingDistanceKm:
+          type: number
+          format: double
+          nullable: true
+          description: Soma de todas as distâncias a pé em km (embarque + desembarque, ida + volta)
+          example: 1.46
+        suggestedBenefits:
+          type: array
+          description: Benefícios (VT) sugeridos pela rota otimizada
+          items:
+            $ref: '#/components/schemas/SuggestedBenefit'
+
+    RouteLeg:
+      type: object
+      description: |
+        Passo do percurso (ida ou volta).
+        Baseado em: PercursoVO do legado (construído a partir de RotaTranspTrajetoEntity)
+      properties:
+        sequence:
+          type: integer
+          description: Sequência no percurso (1, 2, 3...)
+          example: 1
+        direction:
+          type: string
+          enum: [OUTBOUND, RETURN]
+          description: "'OUTBOUND' = ida, 'RETURN' = volta"
+        lineCode:
+          type: string
+          description: Código da linha de transporte
+          example: "8610-10"
+        lineDescription:
+          type: string
+          description: Nome/descrição da linha
+          example: "TERMINAL BANDEIRA/JD PAULO VI"
+        instruction:
+          type: string
+          description: Instrução principal (ex. "Pegar a linha 8610-10 TERMINAL BANDEIRA/JD PAULO VI")
+          example: "Pegar a linha 8610-10 TERMINAL BANDEIRA/JD PAULO VI"
+        instructionDetail:
+          type: string
+          description: |
+            Detalhamento (embarque/desembarque/distância a pé).
+            Ex: "andar 660 metros e embarcar na ROD RAPOSO TAVARES, desembarcar na R ORLANDO VESSONI e andar 70 metros"
+          example: "andar 660 metros e embarcar na ROD RAPOSO TAVARES, desembarcar na R ORLANDO VESSONI e andar 70 metros"
+        boardingLocation:
+          type: string
+          description: Local de embarque
+          example: "ROD RAPOSO TAVARES"
+        alightingLocation:
+          type: string
+          description: Local de desembarque
+          example: "R ORLANDO VESSONI"
+        boardingWalkMeters:
+          type: integer
+          description: Distância a pé até o embarque (metros)
+          example: 660
+        alightingWalkMeters:
+          type: integer
+          description: Distância a pé após desembarque (metros)
+          example: 70
+        estimatedTime:
+          type: string
+          description: Tempo estimado de viagem neste trecho (formato legível)
+          example: "Tempo estimado : 45.26 min."
+        travelTimeMinutes:
+          type: number
+          format: double
+          nullable: true
+          description: Tempo de viagem em minutos (valor numérico para cálculos)
+          example: 45.26
+
+    SuggestedBenefit:
+      type: object
+      description: Benefício (produto de transporte) sugerido pela rota.
+      properties:
+        productId:
+          type: integer
+          format: int64
+          nullable: true
+          description: ID do produto na base (null quando produto não cadastrado)
+          example: 9825
+        saleCode:
+          type: string
+          nullable: true
+          description: Código de venda do produto (null quando produto não cadastrado)
+          example: "009825"
+        description:
+          type: string
+          description: Descrição do produto/linha de transporte
+          example: "FETRANSPOR"
+        quantity:
+          type: integer
+          format: int64
+          description: Quantidade de benefícios
+          example: 2
+        unitPrice:
+          type: number
+          format: double
+          description: Valor unitário da tarifa (R$)
+          example: 4.05
+        subtotal:
+          type: number
+          format: double
+          description: Subtotal (unitPrice × quantity)
+          example: 8.10
+
+    # --- Comum ---
+    ErrorResponse:
+      type: object
+      description: Resposta de erro padrão.
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+          example: 400
+        error:
+          type: string
+          example: "Bad Request"
+        message:
+          type: string
+          example: "Validação falhou"
+        path:
+          type: string
+          example: "/vt/v1/companies/12345/routing-requests"
+        errors:
+          type: array
+          nullable: true
+          description: Lista de erros de validação detalhados (quando aplicável)
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: Campo com erro (quando validação de campo)
+                example: "beneficiaryIds[0]"
+              message:
+                type: string
+                example: "Beneficiário não pertence à empresa"
+              code:
+                type: string
+                description: Código do erro para tratamento programático
+                example: "ROT-001"
+
+  responses:
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthenticated:
+      description: |
+        Credenciais inválidas ou ausentes. Verifique o clientId/clientSecret.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: |
+        Autenticação válida, porém o `companyId` informado no path não pertence 
+        à raiz de CNPJ vinculada ao clientId. Verifique se a empresa é do mesmo grupo econômico.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: |
+        Erro interno não tratado. Tente novamente mais tarde.
+        Se o erro persistir, entre em contato com o suporte.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadGateway:
+      description: |
+        Dependência externa indisponível. O processamento da roteirização não pôde ser concluído.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ServiceUnavailable:
+      description: |
+        Serviço temporariamente indisponível (manutenção, deploy ou sobrecarga).
+        Tente novamente após o período indicado no header `Retry-After`.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Segundos para aguardar antes de nova tentativa
+          example: 30
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  securitySchemes:
+    OAuth2ClientCredentials:
+      type: oauth2
+      description: |
+        Autenticação via clientId/clientSecret gerenciado pelo Sensedia.
+        A raiz do CNPJ é vinculada ao clientId e enviada ao backend no header `X-Company-Document-Root`.
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.alelo.com.br/oauth/token
+          scopes:
+            routing:read: Consultar beneficiários, lotes e rotas
+            routing:write: Solicitar roteirização
+
+security:
+  - OAuth2ClientCredentials: [routing:read, routing:write]
