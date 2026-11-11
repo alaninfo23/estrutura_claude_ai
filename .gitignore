@@ -11,8 +11,9 @@
 !/.claude/Documentacao/test_cases/
 !/.claude/Documentacao/test_cases/**
 
-# Ignorar documentação de testes
-/.claude/docs/test_cases/
+# Ignorar conteúdo das pastas, mas manter os diretórios
+/.claude/docs/test_cases/*
+!/.claude/docs/test_cases/.gitkeep
 
-# Ignorar collections Postman
-/.claude/docs/postman/
+/.claude/docs/postman/*
+!/.claude/docs/postman/.gitkeep
