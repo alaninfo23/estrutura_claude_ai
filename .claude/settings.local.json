@@ -9,6 +9,10 @@
       "Bash(mkdir -p /home/josealan/Claude/.claude/rules)",
       "Write(/home/josealan/Claude/.claude/docs/worklog.md)"
     ],
+    "deny": [
+      "Read(//home/josealan/Claude/.claude/Documentacao/bkp/**)",
+      "Read(~/Claude/.claude/Documentacao/bkp/**)"
+    ],
     "additionalDirectories": [
       "/home/josealan/Claude/.claude/docs/test_cases",
       "/home/josealan/Claude/.claude/rules"
